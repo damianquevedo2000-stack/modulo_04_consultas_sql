@@ -1,14 +1,15 @@
 /*/ Consulta 1 — Resumen ejecutivo mensual Total facturado, cantidad de pedidos y ticket promedio, agrupados por mes. 
- * Calculá el total como cantidad * precio_unitario. Usá alias descriptivos en español y agrupá 
- * por mes con MONTH(fecha_venta) (en PostgreSQL sería EXTRACT(MONTH FROM fecha_venta)).
- */ 
+Calculá el total como cantidad * precio_unitario. Usá alias descriptivos en español y agrupá 
+por mes con MONTH(fecha_venta) (en PostgreSQL sería EXTRACT(MONTH FROM fecha_venta)). */ 
 
 
 SELECT MONTH(fecha_venta) AS mes, SUM(cantidad * precio_unitario) AS total_facturado,
 COUNT(DISTINCT id_venta) AS cantidad_pedidos,
-AVG(cantidad * precio_unitario) AS ticket_promedio
+SUM(cantidad * precio_unitario) * 1.0 / COUNT(DISTINCT id_venta) AS ticket_promedio
 FROM ventas
-GROUP BY MONTH(fecha_venta);
+GROUP BY MONTH(fecha_venta)
+order by mes asc;
+
 
 /*/Consulta 2 — Ranking de productos Top 5 de id_producto por total facturado, mostrando 
  las unidades vendidas (SUM(cantidad)) y el total generado. Usá GROUP BY id_producto, ORDER BY y TOP 5 */
@@ -19,19 +20,19 @@ group by id_producto
 order by total_vendido desc
 limit 5; 
 
+
 /*/Consulta 3 — Clientes recurrentes id_cliente que hayan realizado más de un pedido, mostrando
  la cantidad de pedidos y el total gastado. Usá GROUP BY id_cliente y HAVING COUNT(*) > 1 */
 
 
-
 SELECT 
  id_cliente, 
-COUNT(id_venta) AS cantidad_pedidos,
+COUNT(distinct id_venta) AS cantidad_pedidos,
 SUM(cantidad * precio_unitario) AS total_gastado
 FROM ventas
 GROUP BY id_cliente
-HAVING COUNT(id_venta) > 1;
-
+HAVING COUNT(distinct id_venta) > 1
+order by total_gastado desc;
 
 
 
@@ -44,3 +45,7 @@ from (select sum(cantidad * precio_unitario) as total_mes from ventas
 group by month(fecha_venta)) as sub)
 then 'Por encima' else 'Por debajo' end as estado from ventas group by month(fecha_venta) order by mes;
 
+/*/	HALLAZGOS 
+1. Carte de productos:El negocio depende fuertemente de un solo producto estrella.Más de la mitad de lo facturado viene de la Laptop Pro 15
+2. Retención: Todos los clientes activos volvieron a comprar al menos una vez, lo cual es una buena señal de retenció
+3. Margenes de facturación y rentabilidad: Es primordial no pensar que los productos que mas se venden en monto y en cantidad sean los que mas plata dejan porque no es así y ahí que tenerlo en cuenta
